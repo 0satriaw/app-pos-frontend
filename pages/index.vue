@@ -6,7 +6,7 @@
 const authStore = useAuthStore()
 
 onMounted(() =>{
-    if(authStore.initAuth()){
+    if(authStore.initAuth() && authStore.isAuthenticated){
         navigateTo('/dashboard')
     }else{
         navigateTo('/login')

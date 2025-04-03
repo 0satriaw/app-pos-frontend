@@ -131,7 +131,6 @@
 </template>
 
 <script setup>
-import { Column } from 'primevue';
 import { ref, onMounted, computed} from 'vue';
 import { useAuthStore } from '#imports';
 import axios from 'axios';
@@ -155,7 +154,7 @@ onMounted(async () => {
                 Authorization: `Bearer ${authStore.token}`
             }
         });
-        stats.value = data.stats;
+        stats.value = statsResponse.data;
 
         const ordersResponse = await axios.get(`${config.public.apiBaseUrl}/dashboard/recent`, {
             headers: {
@@ -163,7 +162,7 @@ onMounted(async () => {
             }
         });
         
-        recentOrders.value = data.recentOrders;
+        recentOrders.value = ordersResponse.data;
         
     } catch (error) {
         console.error('Error loading dashboard data', error);

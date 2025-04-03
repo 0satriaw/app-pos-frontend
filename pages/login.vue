@@ -1,7 +1,7 @@
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
         <Card class="w-full max-w-md p-4 shadow-lg">
-            <template #tittle>
+            <template #title>
                 <h1 class="text-center text-2xl font-bold">POS System Login</h1>
             </template>
             <template #content>
@@ -27,10 +27,14 @@
 </template>
 
 <script setup>
-import { Card } from 'primevue';
 import {ref} from 'vue'
 import { useToast } from 'primevue/usetoast';
 import { useAuthStore } from '#imports';
+
+definePageMeta({
+    layout: 'blank',
+    title: 'Login'
+})
 
 const authStore = useAuthStore()
 const toast = useToast()
@@ -62,23 +66,33 @@ const handleLogin = async () => {
     errorMessage.value=''
 
     try {
-        const result = authStore.login(email.value, password.value)
+        const result = await authStore.login(email.value, password.value)
 
-        if(result.success){
+        if(result.success==true){
+            console.log('inside if');
+            console.log('Login successful')
             toast.add({
                 severity:'success',
                 summary:'Login Successful',
                 detail: 'Welcome back',
                 life:3000
             })
+            console.log('Navigating to dashboard')
             navigateTo('/dashboard')
         }else{
+            toast.add({
+                severity:'failed',
+                summary:'Login Failed',
+                detail: 'Invalid credentials',
+                life:3000
+            })
             errorMessage.value =result.message
         }
     } catch (error) {
         errorMessage.value = 'An unexpected error occured'
         console.error(error)
     }finally{
+        
         loading.value=false
     }
 }

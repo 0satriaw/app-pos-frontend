@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   css: [
-    '~/assets/css/main.css'
+    '~/assets/css/main.css',
   ],
   postcss: {
     plugins: {
@@ -29,7 +29,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig:{
     public:{
-      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:8000',
+      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:8080',
     }
   },
   vite: {

@@ -9,30 +9,33 @@ export const useAuthStore = defineStore('auth', {
     }),
     getters: {
         isAuthenticated: (state) => !!state.user,
-        userRole: (state) => state.user?.role || null,
-        userRole: (state) => state.user?.role === 'ADMIN',
-        userRole: (state) => state.user?.role === 'OWNER',
-        userRole: (state) => state.user?.role === 'CASHIER',
+        userRole: (state) => state.user?.roleName || null,
+        isAdmin: (state) => state.user?.roleName === 'ADMIN',
+        isOwner: (state) => state.user?.roleName === 'OWNER',
+        isCashier: (state) => state.user?.roleName === 'CASHIER',
     },
     actions:{
         async login(email, password){
             try {
                 const config = useRuntimeConfig()
-                const response = await axios.post(`${config.public.apiBase}/api/auth/login`, {
+                console.log(config.public.apiBaseUrl);
+                const response = await axios.post(`${config.public.apiBaseUrl}/api/auth/login`, {
                     email, 
                     password
                 })
 
-                const {token} = response.data
-                this.token = token
-                this.user = jwtDecode(token)
+                const data = response.data.data
+                this.token = data.token
+                this.user = JSON.parse(JSON.stringify(data.user));
 
-                localStorage.setItem('token', token)
-
+                localStorage.setItem('token', this.token);
+                localStorage.setItem('user', JSON.stringify(this.user));
+                console.log('User set in state:', this.user);
+                console.log('Token set in state:', this.token);
                 return {success: true}
             } catch (error) {
                 return{
-                    succes:false,
+                    success:false,
                     message: error.response?.data?.message || 'Login failed'                
                 }
             }
@@ -45,13 +48,14 @@ export const useAuthStore = defineStore('auth', {
         },
         async initAuth(){
            const token = localStorage.getItem('token')
+           const user = localStorage.getItem('user')
            if(token){
                try{
                 const decoded = jwtDecode(token)
                 const currentTime = Date.now() / 1000
                 if(decoded.exp > currentTime){
                     this.token = token
-                    this.user = decoded
+                    this.user = JSON.parse(user);
                     return true
                }else{
                 this.logout()

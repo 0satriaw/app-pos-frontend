@@ -3,25 +3,29 @@
         <Toast/>
 
         <!--Top Nav Bar-->
-        <nav class="bg-blue-600 text-white shadow-md p-4">
-            <div class="container mx-auto flex jusitfy-between items-center">
-                <NuxtLink to="/" class="text-xl font-bold">POS System</NuxtLink>
+        <nav class="bg-gray-700 text-white shadow-md p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <!-- <img src="/logo.png" alt="Logo" class="h-8 w-8 rounded-full"/> -->
+                    <NuxtLink to="/" class="text-xl font-bold">POS System</NuxtLink>
+
+                </div>
 
                 <div class="flex items-center space-x-4">
                     <span>{{ user?.name }}</span>
                     <Menu :model="menuItems" :popup="true" ref="menu" />
                     <Button icon="pi pi-user" @click="toggleMenu" class="p-button-rounded p-button-text p-button-plain"/>
                     
-                    <Button @click="logout" icon="pi pi-sign-out" class="p-button-rounded p-button-danger p-button-text"/>
+                    <!-- <Button @click="logout" icon="pi pi-sign-out" class="p-button-rounded p-button-danger p-button-text"/> -->
                 </div>
             </div>
         </nav>
 
         <div class="flex flex-1">
             <!--Side Bar for authenticated user-->
-            <aside v-if="isAuthenticated" class="bg-gray-100 shadow-md w-64">
+            <aside v-if="isAuthenticated" class="shadow-md w-64">
                 <div class="p-4">
-                    <div class="font-medium text-gray-500">MENU</div>
+                    <div class="font-medium text-gray-200">MENU</div>
                 
                     <div class="mt-4 space-y-2">
                         <NuxtLink to="/dashboard" class="block p-2 rounded hover:bg-gray-200">
@@ -45,6 +49,9 @@
                             <NuxtLink to="/products" class="block p-2 rounded hover:bg-gray-200">
                                 <i class="pi pi-box mr-2"></i> Products
                             </NuxtLink>
+                            <NuxtLink to="/categories" class="block p-2 rounded hover:bg-gray-200">
+                                <i class="pi pi-box mr-2"></i> Categories
+                            </NuxtLink>
                         </template>
                     
                         <!-- Cashier and Owner Links -->
@@ -62,7 +69,7 @@
             </aside>
 
             <!--Main Content-->
-            <main class="flex-1 p-6 bg-gray-50">
+            <main class="flex-1 p-6 bg-gray-500 text-white">
                 <slot/>
             </main>
         </div>
@@ -107,5 +114,6 @@ const logout = () => {
 
 onMounted(() => {
     authStore.initAuth();
+    
 });
 </script>
