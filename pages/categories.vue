@@ -30,7 +30,7 @@
             <Column field="id" header="Category ID" :sortable="true">
                 <template #body="slotProps">
                     <span class="font-medium">
-                        {{ slotProps.data.id.substring(0, 8) }}
+                        {{ slotProps.data.id}}
                     </span>
                 </template>
             </Column>
@@ -82,17 +82,19 @@ const filteredCategories = computed(() => {
 
 // Fetch categories on mount
 onMounted(async () => {
+    authStore.initAuth();
     loading.value = true;
     try {
         const response = await axios.get(
-            `${config.public.apiBaseUrl}/categories`,
+            `${config.public.apiBaseUrl}/api/categories`,
             {
                 headers: {
                     Authorization: `Bearer ${authStore.token}`,
                 },
             }
         );
-        categories.value = response.data;
+        console.log("Categories response:", response.data);
+        categories.value = response.data.data;
     } catch (error) {
         console.error("Error fetching categories:", error);
         toast.add({

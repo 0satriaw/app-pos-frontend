@@ -39,6 +39,10 @@
                             <NuxtLink to="/stores" class="block p-2 rounded hover:bg-gray-200">
                                 <i class="pi pi-building mr-2"></i> Stores
                             </NuxtLink>
+
+                            <NuxtLink to="/categories" class="block p-2 rounded hover:bg-gray-200">
+                                <i class="pi pi-box mr-2"></i> Categories
+                            </NuxtLink>
                         </template>
 
                         <!-- Owner Link -->
@@ -48,9 +52,6 @@
                             </NuxtLink>
                             <NuxtLink to="/products" class="block p-2 rounded hover:bg-gray-200">
                                 <i class="pi pi-box mr-2"></i> Products
-                            </NuxtLink>
-                            <NuxtLink to="/categories" class="block p-2 rounded hover:bg-gray-200">
-                                <i class="pi pi-box mr-2"></i> Categories
                             </NuxtLink>
                         </template>
                     
