@@ -5,7 +5,7 @@ import { config } from "process";
 class ApiService{
     constructor(){
         this.axios = axios.create({
-            baseURL: useRuntimeConfig().public.apiBase,
+            baseURL: useRuntimeConfig().public.apiBaseUrl,
             headers:{
                 'Content-Type': 'application/json',
             }
