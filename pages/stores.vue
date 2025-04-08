@@ -77,10 +77,24 @@
                     <Textarea id="address" v-model="store.address" rows="3" />
                 </div>
                 
+                <!-- Owner Dropdown (Admin Only) -->
                 <div class="flex flex-col" v-if="isAdmin">
                     <label for="owner" class="mb-1 text-gray-600">Owner *</label>
-                    <Select id="owner" v-model="store.owner" :options="users" optionLabel="name" placeholder="Select an Owner" :class="{'p-invalid': submitted && !store.owner}" />
+                    <Select
+                        id="owner"
+                        v-model="store.owner"
+                        :options="users"
+                        optionLabel="name"
+                        placeholder="Select an Owner"
+                        :class="{'p-invalid': submitted && !store.owner}"
+                    />
                     <small class="text-red-500" v-if="submitted && !store.owner">Owner is required</small>
+                </div>
+
+                <!-- Owner Display (Owner Role) -->
+                <div class="flex flex-col" v-if="isOwner">
+                    <label for="owner" class="mb-1 text-gray-600">Owner</label>
+                    <InputText id="owner" v-model="store.owner.name" disabled />
                 </div>
             </div>
             
@@ -161,16 +175,12 @@ onMounted(async () => {
         });
         stores.value = storeResponse.data.data.content || [];
 
-        console.log("Stores response:", storeResponse.data);
-        console.log(isAdmin.value);
-        
         // Load users with OWNER role if admin
         if (isAdmin.value) {
             const userResponse = await axios.get(
                 `${config.public.apiBaseUrl}/api/users/roles/OWNER`, 
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );
-            console.log("Users response:", userResponse.data);
             users.value = userResponse.data.data || [];
         }
 
@@ -190,11 +200,14 @@ onMounted(async () => {
 // Open store dialog for add/edit
 const openStoreDialog = (storeData = null) => {
     store.value = storeData 
-        ? {...storeData} 
+        ? {
+            ...storeData,
+            owner: users.value.find(user => user.id === storeData.ownerId) || null // Match owner by ID
+        }
         : {
             name: '',
             address: '',
-            owner: null,
+            owner: isOwner.value ? user.value : null, // Default owner for owners
         };
     
     submitted.value = false;
@@ -228,8 +241,6 @@ const saveStore = async () => {
     }
     
     loading.value = true;
-    console.log('Selected owner:', store.value.owner);
-console.log('Owner ID being sent:', store.value.owner?.id);
     
     try {
         const storeData = {
@@ -239,7 +250,6 @@ console.log('Owner ID being sent:', store.value.owner?.id);
         };
         
         let response;
-        console.log('Store data before save:', storeData);
         
         if (editMode.value) {
             response = await axios.put(
@@ -261,7 +271,6 @@ console.log('Owner ID being sent:', store.value.owner?.id);
                 life: 3000
             });
         } else {
-            console.log('Creating new store', storeData);
             response = await axios.post(
                 `${config.public.apiBaseUrl}/api/stores`, 
                 storeData,
@@ -269,7 +278,6 @@ console.log('Owner ID being sent:', store.value.owner?.id);
             );
             
             // Add new store to the list
-            console.log('New store response:', response.data);
             stores.value.push(response.data.data);
             
             toast.add({
@@ -318,7 +326,7 @@ const deleteStore = async () => {
         toast.add({
             severity: "error",
             summary: "Error",
-            detail: error.response?.data?.message || "Failed to delete store",
+            detail: "Failed to delete store",
             life: 3000
         });
     }
