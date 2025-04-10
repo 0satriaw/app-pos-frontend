@@ -53,7 +53,7 @@
 
                         <!-- Owner Link -->
                         <template v-if="isOwner">
-                            <NuxtLink to="/my-stores" class="block p-2 rounded hover:bg-gray-200">
+                            <NuxtLink to="/stores" class="block p-2 rounded hover:bg-gray-200">
                                 <i class="pi pi-users mr-2"></i> My Stores
                             </NuxtLink>
                             <NuxtLink to="/products" class="block p-2 rounded hover:bg-gray-200">

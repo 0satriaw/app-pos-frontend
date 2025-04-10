@@ -304,7 +304,7 @@ onMounted(async () => {
 
         } else if (isOwner.value) {
             // Load owner's stores
-            const storeResponse = await axios.get(`${config.public.apiBaseUrl}/api/stores/my-stores`, {
+            const storeResponse = await axios.get(`${config.public.apiBaseUrl}/api/stores`, {
                 headers: { Authorization: `Bearer ${authStore.token}` }
             });
             stores.value = [{ id: null, name: "All Stores" }, ...storeResponse.data.data.content] || [];
@@ -403,10 +403,13 @@ const saveProduct = async () => {
         };
         
         let response;
-        
+        const existingStoreId = product.value.storeId;
         if (editMode.value) {
+            
+            console.log('Product Data:', productData);
+            console.log('Existing Store ID:', existingStoreId);
             response = await axios.put(
-                `${config.public.apiBaseUrl}/api/stores/${productData.storeId}/products/${product.value.id}`, 
+                `${config.public.apiBaseUrl}/api/stores/${existingStoreId}/products/${product.value.id}`, 
                 productData,
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );
@@ -425,7 +428,7 @@ const saveProduct = async () => {
             });
         } else {
             response = await axios.post(
-                `${config.public.apiBaseUrl}/api/stores/${productData.storeId}/products`, 
+                `${config.public.apiBaseUrl}/api/stores/${existingStoreId}/products`, 
                 productData,
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );

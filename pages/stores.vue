@@ -51,13 +51,13 @@
                         icon="pi pi-pencil"
                         class="p-button-rounded p-button-text p-button-sm"
                         @click="openStoreDialog(slotProps.data)"
-                        v-if="isAdmin || (isOwner && slotProps.data.owner.id === user.id)"
+                        v-if="isAdmin || (isOwner && slotProps.data.ownerId === user.id)"
                     />
                     <Button
                         icon="pi pi-trash"
                         class="p-button-rounded p-button-danger p-button-text p-button-sm"
                         @click="confirmDeleteStore(slotProps.data)"
-                        v-if="isAdmin || (isOwner && slotProps.data.owner.id === user.id)"
+                        v-if="isAdmin || (isOwner && slotProps.data.ownerId === user.id)"
                     />
                 </template>
             </Column>
@@ -94,7 +94,7 @@
                 <!-- Owner Display (Owner Role) -->
                 <div class="flex flex-col" v-if="isOwner">
                     <label for="owner" class="mb-1 text-gray-600">Owner</label>
-                    <InputText id="owner" v-model="store.owner.name" disabled />
+                    <InputText id="owner" v-model="store.ownerName" disabled />
                 </div>
             </div>
             
@@ -168,13 +168,14 @@ onMounted(async () => {
         // Different endpoint for admin vs owner
         const endpoint = isAdmin.value 
             ? `${config.public.apiBaseUrl}/api/stores` 
-            : `${config.public.apiBaseUrl}/api/stores/my-stores`;
+            : `${config.public.apiBaseUrl}/api/stores`;
             
         const storeResponse = await axios.get(endpoint, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });
         stores.value = storeResponse.data.data.content || [];
 
+        console.log("Stores loaded:", stores.value);
         // Load users with OWNER role if admin
         if (isAdmin.value) {
             const userResponse = await axios.get(
@@ -252,6 +253,10 @@ const saveStore = async () => {
         let response;
         
         if (editMode.value) {
+            if(isOwner.value){
+                storeData.ownerId = user.value.id // Ensure owner ID is set
+            }
+
             response = await axios.put(
                 `${config.public.apiBaseUrl}/api/stores/${store.value.id}`, 
                 storeData,
