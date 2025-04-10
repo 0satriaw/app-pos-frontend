@@ -25,7 +25,6 @@
                     optionLabel="name"
                     placeholder="All Stores"
                     class="w-80"
-                    v-if="isAdmin"
                 />
             </div>
 
@@ -65,7 +64,7 @@
             </Column>
 
             <Column field="name" header="Product Name" :sortable="true" />
-            <Column field="storeName" header="Store" :sortable="true" v-if="isAdmin" />
+            <Column field="storeName" header="Store" :sortable="true" />
             <Column field="description" header="Description">
                 <template #body="slotProps">
                     <span>{{ slotProps.data.description?.substring(0, 50) }}{{ slotProps.data.description?.length > 50 ? '...' : '' }}</span>
@@ -126,7 +125,7 @@
                 </div>
                 
                 
-                <div class="flex flex-col" v-if="isAdmin && stores.length">
+                <div class="flex flex-col" v-if="stores.length">
                     <label for="store" class="mb-1 text-gray-600">Store *</label>
                     <Select id="store" v-model="product.store" :options="stores" optionLabel="name" placeholder="Select a Store" :class="{'p-invalid': submitted && !product.store}" />
                     <small class="text-red-500" v-if="submitted && !product.store">Store is required</small>
@@ -262,7 +261,7 @@ const filteredProducts = computed(() => {
         }
         
         // Filter by store (admin only)
-        if (isAdmin.value && selectedStore.value && selectedStore.value.id) {
+        if (selectedStore.value && selectedStore.value.id) {
             matchesStore = prod.storeId === selectedStore.value.id;
         }
         
@@ -283,11 +282,18 @@ onMounted(async () => {
 
     try {
         // Load products
-        const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/products`, {
-            headers: { Authorization: `Bearer ${authStore.token}` }
-        });
-        products.value = productResponse.data.data.content || [];
-        
+        if(isAdmin.value){
+            const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/products`, {
+                headers: { Authorization: `Bearer ${authStore.token}` }
+            });
+            products.value = productResponse.data.data.content || [];
+        } else {
+            const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/products/${authStore.user.id}`, {
+                headers: { Authorization: `Bearer ${authStore.token}` }
+            });
+            products.value = productResponse.data.data || [];
+        }
+       
         // Load categories
         const categoryResponse = await axios.get(`${config.public.apiBaseUrl}/api/categories`, {
             headers: { Authorization: `Bearer ${authStore.token}` }
@@ -428,7 +434,7 @@ const saveProduct = async () => {
             });
         } else {
             response = await axios.post(
-                `${config.public.apiBaseUrl}/api/stores/${existingStoreId}/products`, 
+                `${config.public.apiBaseUrl}/api/stores/${productData.storeId}/products`, 
                 productData,
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );
@@ -462,7 +468,7 @@ const saveProduct = async () => {
 const deleteProduct = async () => {
     try {
         await axios.delete(
-           `${config.public.apiBaseUrl}/api/stores/${productData.storeId}/products/${product.value.id}`, 
+           `${config.public.apiBaseUrl}/api/stores/${product.value.storeId}/products/${product.value.id}`, 
             { headers: { Authorization: `Bearer ${authStore.token}` } }
         );
         
