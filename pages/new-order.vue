@@ -1,152 +1,158 @@
 <template>
-    <h1 class="text-4xl font-bold mb-6">Products</h1>
-
-    <div class="flex h-screen">
-        <!-- Left Section: Product Cards -->
-        <div class="flex-1 p-6 bg-gray-50 overflow-y-auto mx-2 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-6">
-                <!-- Search Bar -->
-                <InputText
-                    v-model="searchQuery"
-                    placeholder="Search products..."
-                    class="p-inputtext w-full md:w-1/3"
-                />
-
-                <!-- Category Filter -->
-                <Select
-                    v-model="selectedCategory"
-                    :options="categories"
-                    optionLabel="name"
-                    placeholder="All Categories"
-                    class="w-80"
-                />
-
-                <!-- Store Filter -->
-                <Select
-                    v-model="selectedStore"
-                    :options="stores"
-                    optionLabel="name"
-                    placeholder="All Stores"
-                    class="w-80"
-                />
-            </div>
-
-            <!-- Product Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div
-                    v-for="product in filteredProducts"
-                    :key="product.id"
-                    class="border rounded-lg shadow-lg p-4 bg-white hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between"
-                >
-                    <img
-                        v-if="product.imageUrl"
-                        :src="config.public.apiBaseUrl + product.imageUrl"
-                        alt="Product Image"
-                        class="object-cover rounded-lg mb-4"
-                        style="height: 200px; width: 100%; object-fit: cover;"
-                    />
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold mb-2 text-gray-800">{{ product.name }}</h3>
-                        <p class="text-sm text-gray-600 mb-2">{{ product.description }}</p>
-                        <p class="text-lg font-bold text-green-600">Rp {{ product.price.toFixed(2) }}</p>
-                        <p class="text-sm font-bold text-gray-500">Stock: {{ product.stock }}</p>
-
-                        <p class="text-sm font-bold text-gray-700">Store: {{ product.storeName }}</p>
-                    </div>
-                    <Button
-                        label="Add to Order"
-                        icon="pi pi-plus"
-                        class="p-button-sm p-button-success mt-4"
-                        @click="addToOrder(product)"
-                    />
-                </div>
-            </div>
+    <div class="flex flex-col h-screen">
+        <!-- Store Filter -->
+        <div class="flex justify-between items-center mb-4 p-4 ">
+            <h1 class="text-4xl font-bold">Products</h1>
+            <Select
+                v-model="selectedStore"
+                :options="stores"
+                optionLabel="name"
+                placeholder="Select a Store"
+                class="w-80"
+            />
         </div>
 
-        <!-- Right Section: Order List and Payment -->
-        <div class="w-1/4 bg-gray-100 p-6 flex flex-col mx-2 rounded-lg shadow-lg" style="max-height: 80vh;">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">Order List</h2>
+        <div class="flex flex-1">
+            <!-- Left Section: Product Cards -->
+            <div class="flex-1 p-6 bg-gray-50 overflow-y-auto mx-2 rounded-lg shadow-lg">
+                <div v-if="selectedStore">
+                    <div class="flex justify-between items-center mb-6">
+                        <!-- Search Bar -->
+                        <InputText
+                            v-model="searchQuery"
+                            placeholder="Search products..."
+                            class="p-inputtext w-2/3 mx-2"
+                        />
 
-            <!-- Order List -->
-            <div class="flex-1 overflow-y-auto mb-4">
-                <div
-                    v-for="(item, index) in orderList"
-                    :key="item.id"
-                    class="flex justify-between items-center border-b py-3"
-                >
-                    <div>
-                        <h3 class="font-bold text-gray-800">{{ item.name }}</h3>
-                        <p class="text-sm text-gray-600">Rp {{ item.price.toFixed(2) }}</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <Button
-                            icon="pi pi-minus"
-                            class="p-button-rounded p-button-text p-button-sm"
-                            @click="decreaseQuantity(index)"
-                        />
-                        <span class="font-bold text-gray-800">{{ item.quantity }}</span>
-                        <Button
-                            icon="pi pi-plus"
-                            class="p-button-rounded p-button-text p-button-sm"
-                            @click="increaseQuantity(index)"
-                        />
-                        <Button
-                            icon="pi pi-trash"
-                            class="p-button-rounded p-button-danger p-button-text p-button-sm"
-                            @click="removeFromOrder(index)"
+                        <!-- Category Filter -->
+                        <Select
+                            v-model="selectedCategory"
+                            :options="categories"
+                            optionLabel="name"
+                            placeholder="All Categories mx-2"
+                            class="w-1/3"
                         />
                     </div>
-                </div>
-            </div>
 
-            <!-- Payment Section -->
-            <div class="border-t pt-4">
-                <h3 class="text-lg font-bold mb-2 text-gray-800">Total: Rp {{ totalPrice.toFixed(2) }}</h3>
-                <Button
-                    label="Checkout"
-                    icon="pi pi-check"
-                    class="p-button-success w-full"
-                    @click="checkout"
-                />
-            </div>
-        </div>
-    </div>
-
-    <!-- Order Details Dialog -->
-    <Dialog v-model:visible="orderDetailsDialogVisible" :header="'Order Details'" :modal="true" :style="{ width: '600px' }">
-        <div>
-            <h3 class="text-lg font-bold mb-4">Order Summary</h3>
-            <p><strong>Order ID:</strong> {{ orderDetails.id }}</p>
-            <p><strong>Store:</strong> {{ orderDetails.storeName }}</p>
-            <p><strong>User:</strong> {{ orderDetails.userName }}</p>
-            <p><strong>Total Price:</strong> Rp {{ orderDetails.totalPrice.toFixed(2) }}</p>
-            <p><strong>Status:</strong> {{ orderDetails.status }}</p>
-
-            <h4 class="text-lg font-bold mt-4 mb-2">Items</h4>
-            <ul>
-                <li v-for="item in orderDetails.items" :key="item.id" class="mb-2">
-                    <div class="flex items-center space-x-4">
-                        <img
-                            v-if="item.productImageUrl"
-                            :src="config.public.apiBaseUrl + item.productImageUrl"
-                            alt="Product Image"
-                            class="object-cover rounded-lg"
-                            style="height: 50px; width: 50px; object-fit: cover;"
-                        />
-                        <div>
-                            <p class="font-bold">{{ item.productName }}</p>
-                            <p class="text-sm text-gray-600">{{ item.quantity }} x Rp {{ item.price.toFixed(2) }}</p>
+                    <!-- Product Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div
+                            v-for="product in filteredProducts"
+                            :key="product.id"
+                            class="border rounded-lg shadow-lg p-4 bg-white hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between"
+                        >
+                            <img
+                                v-if="product.imageUrl"
+                                :src="config.public.apiBaseUrl + product.imageUrl"
+                                alt="Product Image"
+                                class="object-cover rounded-lg mb-4"
+                                style="height: 200px; width: 100%; object-fit: cover;"
+                            />
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold mb-2 text-gray-800">{{ product.name }}</h3>
+                                <p class="text-sm text-gray-600 mb-2">{{ product.description }}</p>
+                                <p class="text-lg font-bold text-green-600">Rp {{ product.price.toFixed(2) }}</p>
+                                <p class="text-sm font-bold text-gray-500">Stock: {{ product.stock }}</p>
+                            </div>
+                            <Button
+                                label="Add to Order"
+                                icon="pi pi-plus"
+                                class="p-button-sm p-button-success mt-4"
+                                @click="addToOrder(product)"
+                            />
                         </div>
                     </div>
-                </li>
-            </ul>
+                </div>
+                <div v-else class="flex items-center justify-center h-full">
+                    <p class="text-gray-600 text-lg">Please select a store to view products.</p>
+                </div>
+            </div>
+
+            <!-- Right Section: Order List and Payment -->
+            <div class="w-1/4 bg-gray-100 p-6 flex flex-col mx-2 rounded-lg shadow-lg" style="max-height: 80vh;">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Order List</h2>
+
+                <!-- Order List -->
+                <div class="flex-1 overflow-y-auto mb-4">
+                    <div
+                        v-for="(item, index) in orderList"
+                        :key="item.id"
+                        class="flex justify-between items-center border-b py-3"
+                    >
+                        <div>
+                            <h3 class="font-bold text-gray-800">{{ item.name }}</h3>
+                            <p class="text-sm text-gray-600">Rp {{ item.price.toFixed(2) }}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <Button
+                                icon="pi pi-minus"
+                                class="p-button-rounded p-button-text p-button-sm"
+                                @click="decreaseQuantity(index)"
+                            />
+                            <span class="font-bold text-gray-800">{{ item.quantity }}</span>
+                            <Button
+                                icon="pi pi-plus"
+                                class="p-button-rounded p-button-text p-button-sm"
+                                @click="increaseQuantity(index)"
+                            />
+                            <Button
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger p-button-text p-button-sm"
+                                @click="removeFromOrder(index)"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Section -->
+                <div class="border-t pt-4">
+                    <h3 class="text-lg font-bold mb-2 text-gray-800">Total: Rp {{ totalPrice.toFixed(2) }}</h3>
+                    <Button
+                        label="Checkout"
+                        icon="pi pi-check"
+                        class="p-button-success w-full"
+                        @click="checkout"
+                    />
+                </div>
+            </div>
         </div>
 
-        <template #footer>
-            <Button label="Pay Now" icon="pi pi-credit-card" class="p-button-success" @click="payNow" />
-            <Button label="Pay Later" icon="pi pi-clock" class="p-button-secondary" @click="payLater" />
-        </template>
-    </Dialog>
+        <!-- Order Details Dialog -->
+        <Dialog v-model:visible="orderDetailsDialogVisible" :header="'Order Details'" :modal="true" :style="{ width: '600px' }">
+            <div>
+                <h3 class="text-lg font-bold mb-4">Order Summary</h3>
+                <p><strong>Order ID:</strong> {{ orderDetails.id }}</p>
+                <p><strong>Store:</strong> {{ orderDetails.storeName }}</p>
+                <p><strong>User:</strong> {{ orderDetails.userName }}</p>
+                <p><strong>Total Price:</strong> Rp {{ orderDetails.totalPrice.toFixed(2) }}</p>
+                <p><strong>Status:</strong> {{ orderDetails.status }}</p>
+
+                <h4 class="text-lg font-bold mt-4 mb-2">Items</h4>
+                <ul>
+                    <li v-for="item in orderDetails.items" :key="item.id" class="mb-2">
+                        <div class="flex items-center space-x-4">
+                            <img
+                                v-if="item.productImageUrl"
+                                :src="config.public.apiBaseUrl + item.productImageUrl"
+                                alt="Product Image"
+                                class="object-cover rounded-lg"
+                                style="height: 50px; width: 50px; object-fit: cover;"
+                            />
+                            <div>
+                                <p class="font-bold">{{ item.productName }}</p>
+                                <p class="text-sm text-gray-600">{{ item.quantity }} x Rp {{ item.price.toFixed(2) }}</p>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <template #footer>
+                <Button label="Pay Now" icon="pi pi-credit-card" class="p-button-success" @click="payNow" />
+                <Button label="Pay Later" icon="pi pi-clock" class="p-button-secondary" @click="payLater" />
+            </template>
+        </Dialog>
+    </div>
 </template>
 
 <script setup>
@@ -175,6 +181,7 @@ const user = computed(() => authStore.user);
 
 // Computed properties
 const filteredProducts = computed(() => {
+    if (!selectedStore.value) return [];
     return products.value.filter((product) => {
         let matchesSearch = true;
         let matchesCategory = true;
@@ -193,7 +200,6 @@ const filteredProducts = computed(() => {
             matchesCategory = product.categoryId === selectedCategory.value.id;
         }
 
-        // Filter by store
         if (selectedStore.value && selectedStore.value.id) {
             matchesStore = product.storeId === selectedStore.value.id;
         }
@@ -228,7 +234,7 @@ onMounted(async () => {
         const storeResponse = await axios.get(`${config.public.apiBaseUrl}/api/stores`, {
             headers: { Authorization: `Bearer ${authStore.token}` },
         });
-        stores.value = [{ id: null, name: "All Stores" }, ...storeResponse.data.data.content] || [];
+        stores.value = storeResponse.data.data.content || [];
     } catch (error) {
         console.error("Error loading data:", error);
         toast.add({
