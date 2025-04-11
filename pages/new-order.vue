@@ -149,7 +149,7 @@
 
             <template #footer>
                 <Button label="Pay Now" icon="pi pi-credit-card" class="p-button-success" @click="payNow" />
-                <Button label="Pay Later" icon="pi pi-clock" class="p-button-secondary" @click="payLater" />
+                <Button label="Close" icon="pi pi-times" class="p-button-secondary" @click="orderDetailsDialogVisible = false" />
             </template>
         </Dialog>
     </div>
@@ -377,14 +377,39 @@ const checkout = async () => {
     }
 };
 
-const payNow = () => {
-    toast.add({
-        severity: "info",
-        summary: "Payment",
-        detail: "Redirecting to payment gateway...",
-        life: 3000,
-    });
-    // Add logic for payment gateway redirection
+const payNow = async () => {
+    try {
+        const paymentData = {
+            order_id: orderDetails.value.id,
+            gross_amount: orderDetails.value.totalPrice,
+        };
+
+        const response = await axios.post(`${config.public.apiBaseUrl}/api/payments`, paymentData, {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+
+        const paymentResponse = response.data.data;
+
+        toast.add({
+            severity: "success",
+            summary: "Payment Created",
+            detail: "Redirecting to payment gateway...",
+            life: 3000,
+        });
+
+        // Open the redirect URL in a new tab
+        window.open(paymentResponse.redirectUrl, "_blank");
+    } catch (error) {
+        console.error("Error creating payment:", error);
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to create payment",
+            life: 3000,
+        });
+    }finally{
+        orderDetailsDialogVisible.value = false;
+    }
 };
 
 const payLater = () => {

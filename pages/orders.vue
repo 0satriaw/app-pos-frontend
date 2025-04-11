@@ -59,7 +59,8 @@
                         'px-2 py-1 rounded text-xs font-medium': true,
                         'bg-yellow-100 text-yellow-800': slotProps.data.status === 'PENDING',
                         'bg-green-100 text-green-800': slotProps.data.status === 'COMPLETED',
-                        'bg-red-100 text-red-800': slotProps.data.status === 'CANCELLED'
+                        'bg-red-100 text-red-800': slotProps.data.status === 'CANCELLED',
+                        'bg-blue-100 text-blue-800': slotProps.data.status === 'PROCESSING'
                     }">
                         {{ slotProps.data.status }}
                     </span>
@@ -82,6 +83,13 @@
                         icon="pi pi-dollar"
                         class="p-button-rounded p-button-text p-button-sm p-button-success"
                         @click="payOrder(slotProps.data)"
+                    />
+                    <Button
+                        v-if="slotProps.data.status === 'PROCESSING'"
+                        label="Simulate Payment"
+                        icon="pi pi-check"
+                        class="p-button-rounded p-button-text p-button-sm p-button-info"
+                        @click="simulatePayment(slotProps.data)"
                     />
                 </template>
             </Column>
@@ -157,6 +165,7 @@ const statuses = [
     { label: "Pending", value: "PENDING" },
     { label: "Completed", value: "COMPLETED" },
     { label: "Cancelled", value: "CANCELLED" },
+    { label: "Processing", value: "PROCESSING" },
 ];
 
 // Computed properties
@@ -177,12 +186,15 @@ const filteredOrders = computed(() => {
         }
 
         // Filter by status
-        if (selectedStatus.value) {
-            matchesStatus = order.status === selectedStatus.value;
+        if (selectedStatus.value === null || selectedStatus.value.value === null) {
+            matchesStatus = true; // Show all statuses
+        } else {
+            matchesStatus = order.status === selectedStatus.value.value;
         }
 
-        // Filter by store (Owner Only)
-        if (isOwner.value && selectedStore.value) {
+
+        // Filter by store
+        if (selectedStore.value && selectedStore.value.id) {
             matchesStore = order.storeId === selectedStore.value.id;
         }
 
@@ -236,31 +248,76 @@ const viewOrderDetails = (order) => {
 // Pay order
 const payOrder = async (order) => {
     try {
-        const response = await axios.patch(
-            `${config.public.apiBaseUrl}/api/orders/${order.id}/status`,
-            null,
-            {
-                params: { status: "COMPLETED" },
-                headers: { Authorization: `Bearer ${authStore.token}` },
-            }
-        );
+        const paymentData = {
+            order_id: order.id,
+            gross_amount: order.totalPrice,
+        };
+
+        const response = await axios.post(`${config.public.apiBaseUrl}/api/payments`, paymentData, {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+
+        const paymentResponse = response.data.data;
 
         toast.add({
             severity: "success",
-            summary: "Success",
-            detail: "Order paid successfully",
+            summary: "Payment Created",
+            detail: "Redirecting to payment gateway...",
+            life: 3000,
+        });
+
+        // Open the redirect URL in a new tab
+        if (paymentResponse.redirectUrl) {
+            window.open(paymentResponse.redirectUrl, "_blank");
+        } else {
+            toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: "Invalid redirect URL",
+                life: 3000,
+            });
+        }
+    } catch (error) {
+        console.error("Error creating payment:", error);
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to create payment",
+            life: 3000,
+        });
+    }
+};
+
+// Simulate payment
+const simulatePayment = async (order) => {
+    try {
+        const webhookData = {
+            order_id: order.id,
+            transaction_status: "settlement",
+        };
+
+        await axios.post(`${config.public.apiBaseUrl}/api/webhook`, webhookData, {
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authStore.token}`,
+            },
+        });
+
+        toast.add({
+            severity: "success",
+            summary: "Payment Simulated",
+            detail: "Order status updated to COMPLETED",
             life: 3000,
         });
 
         // Update the order status locally
         order.status = "COMPLETED";
-        orderDetailsDialogVisible.value = false;
     } catch (error) {
-        console.error("Error paying order:", error);
+        console.error("Error simulating payment:", error);
         toast.add({
             severity: "error",
             summary: "Error",
-            detail: "Failed to pay order",
+            detail: "Failed to simulate payment",
             life: 3000,
         });
     }
