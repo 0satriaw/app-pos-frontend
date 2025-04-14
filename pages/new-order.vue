@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col h-screen">
         <!-- Store Filter -->
-        <div class="flex justify-between items-center mb-4 p-4 ">
+        <div class="flex justify-between items-center mb-4 p-4">
             <h1 class="text-4xl font-bold">Products</h1>
             <Select
                 v-model="selectedStore"
@@ -9,6 +9,7 @@
                 optionLabel="name"
                 placeholder="Select a Store"
                 class="w-80"
+                :disabled="isCashier"
             />
         </div>
 
@@ -29,7 +30,7 @@
                             v-model="selectedCategory"
                             :options="categories"
                             optionLabel="name"
-                            placeholder="All Categories mx-2"
+                            placeholder="All Categories"
                             class="w-1/3"
                         />
                     </div>
@@ -178,6 +179,7 @@ const orderDetailsDialogVisible = ref(false); // State for order details dialog 
 const orderDetails = ref({}); // State for order details
 
 const user = computed(() => authStore.user);
+const isCashier = computed(() => user.value.roleName === "CASHIER"); // Check if the user is a cashier
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -219,10 +221,17 @@ onMounted(async () => {
 
     try {
         // Load products
-        const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/products/${authStore.user.id}`, {
-            headers: { Authorization: `Bearer ${authStore.token}` },
-        });
-        products.value = productResponse.data.data || [];
+        if(isCashier.value){
+            const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/stores/${authStore.user.storeId}/products`, {
+                headers: { Authorization: `Bearer ${authStore.token}` },
+            });
+            products.value = productResponse.data.data.content || [];
+        }else{
+            const productResponse = await axios.get(`${config.public.apiBaseUrl}/api/products/${authStore.user.id}`, {
+                headers: { Authorization: `Bearer ${authStore.token}` },
+            });
+            products.value = productResponse.data.data || [];
+        }
 
         // Load categories
         const categoryResponse = await axios.get(`${config.public.apiBaseUrl}/api/categories`, {
@@ -235,6 +244,12 @@ onMounted(async () => {
             headers: { Authorization: `Bearer ${authStore.token}` },
         });
         stores.value = storeResponse.data.data.content || [];
+        console.log(storeResponse.data.data.content);  
+
+        // If the user is a cashier, pre-select their store and disable the dropdown
+        if (isCashier.value) {
+            selectedStore.value = stores.value.find((store) => store.id === user.value.storeId);
+        }
     } catch (error) {
         console.error("Error loading data:", error);
         toast.add({

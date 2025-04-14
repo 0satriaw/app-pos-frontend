@@ -170,6 +170,8 @@ const statuses = [
 
 // Computed properties
 const isOwner = computed(() => authStore.isOwner);
+const isCashier = computed(() => authStore.isCashier); // Check if the user is a cashier
+
 
 const filteredOrders = computed(() => {
     return orders.value.filter((order) => {
@@ -209,8 +211,11 @@ onMounted(async () => {
     try {
         let endpoint = `${config.public.apiBaseUrl}/api/orders`;
 
-        // Owner: Fetch all orders for their stores
-        if (authStore.isOwner) {
+        // If the user is a cashier, fetch orders for their assigned store
+        if (isCashier.value) {
+            endpoint = `${config.public.apiBaseUrl}/api/orders/user/${authStore.user.storeId}`;
+        } else if (authStore.isOwner) {
+            // Owner: Fetch all orders for their stores
             endpoint = `${config.public.apiBaseUrl}/api/orders/owner/${authStore.user.id}`;
         }
 
@@ -218,6 +223,7 @@ onMounted(async () => {
             headers: { Authorization: `Bearer ${authStore.token}` },
         });
         orders.value = response.data.data || [];
+        console.log("Orders loaded:", orders.value);
 
         // Load stores for owner filter
         if (isOwner.value) {

@@ -85,6 +85,20 @@
                     />
                     <small class="text-red-500" v-if="submitted && !user.role">Role is required</small>
                 </div>
+
+                <!-- Store selection for CASHIER role -->
+                <div class="flex flex-col" v-if="user.role && user.role.name === 'CASHIER'">
+                    <label for="store" class="mb-1 text-gray-600">Store *</label>
+                    <Select
+                        id="store"
+                        v-model="user.store"
+                        :options="stores"
+                        optionLabel="name"
+                        placeholder="Select a Store"
+                        :class="{'p-invalid': submitted && !user.store}"
+                    />
+                    <small class="text-red-500" v-if="submitted && !user.store">Store is required for cashiers</small>
+                </div>
             </div>
 
             <template #footer>
@@ -120,12 +134,14 @@ const toast = useToast();
 // State
 const users = ref([]);
 const roles = ref([]);
+const stores = ref([]); // Added stores state
 const loading = ref(false);
 const userDialog = ref(false);
 const deleteDialog = ref(false);
 const submitted = ref(false);
 const editMode = ref(false);
 const searchQuery = ref("");
+const selectedStores = ref(); // Selected stores for filtering
 
 const selectedRole = ref(null); // Selected role for filtering
 const roleOptions = computed(() => [
@@ -138,7 +154,8 @@ const user = ref({
     name: '',
     email: '',
     password: '',
-    role: null
+    role: null,
+    store: null // Added store property
 });
 
 // Computed properties
@@ -164,7 +181,7 @@ const filteredUsers = computed(() => {
     });
 });
 
-// Load users and roles on mount
+// Load users, roles, and stores on mount
 onMounted(async () => {
     loading.value = true;
     try {
@@ -179,12 +196,18 @@ onMounted(async () => {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });
         roles.value = roleResponse.data.data || [];
+
+        // Load stores
+        const storeResponse = await axios.get(`${config.public.apiBaseUrl}/api/stores`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        stores.value = storeResponse.data.data.content || [];
     } catch (error) {
-        console.error("Error loading users or roles:", error);
+        console.error("Error loading users, roles, or stores:", error);
         toast.add({
             severity: "error",
             summary: "Error",
-            detail: "Failed to load users or roles",
+            detail: "Failed to load users, roles, or stores",
             life: 3000
         });
     } finally {
@@ -196,7 +219,7 @@ onMounted(async () => {
 const openUserDialog = (userData = null) => {
     user.value = userData 
         ? { ...userData, role: roles.value.find(role => role.id === userData.roleId) || null }
-        : { name: '', email: '', role: null };
+        : { name: '', email: '', role: null, store: null };
     
     submitted.value = false;
     editMode.value = !!userData;
@@ -214,63 +237,69 @@ const saveUser = async () => {
     submitted.value = true;
 
     // Validation
-    if (!user.value.name || !user.value.email || !user.value.role) {
+    if (!user.value.name || !user.value.email || !user.value.role || (user.value.role.name === 'CASHIER' && !user.value.store)) {
         return;
     }
 
     loading.value = true;
-
     try {
         let response;
-        console.log("Updating user:", user.value);
         if (editMode.value) {
+            console.log("Payload being sent:", {
+    name: user.value.name,
+    email: user.value.email,
+    password: user.value.password,
+    role: user.value.role.name,
+    storeId: user.value.role.name === 'CASHIER' ? user.value.store?.id : null
+});
             // Update user
-
             response = await axios.put(
                 `${config.public.apiBaseUrl}/api/users/${user.value.id}`,
                 {
                     name: user.value.name,
                     email: user.value.email,
-                    role: user.value.role.name // Use role name directly
+                    role: user.value.role.name,
+                    storeId: user.value.role.name === 'CASHIER' ? user.value.store.id : null // Use user.store.id
                 },
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );
-
-            // Update user in the list
-            const index = users.value.findIndex(u => u.id === user.value.id);
-            if (index !== -1) {
-                users.value[index] = response.data.data;
-            }
-
-            toast.add({
-                severity: "success",
-                summary: "Success",
-                detail: "User updated",
-                life: 3000
-            });
         } else {
-            // Create new user
+            console.log("Payload being sent:", {
+    name: user.value.name,
+    email: user.value.email,
+    password: user.value.password,
+    role: user.value.role.name,
+    storeId: user.value.role.name === 'CASHIER' ? user.value.store?.id : null
+});
             response = await axios.post(
                 `${config.public.apiBaseUrl}/api/users`,
                 {
                     name: user.value.name,
                     email: user.value.email,
-                    password: user.value.password, 
-                    role: user.value.role.name 
+                    password: user.value.password,
+                    role: user.value.role.name,
+                    storeId: user.value.role.name === 'CASHIER' ? user.value.store.id : null // Use user.store.id
                 },
                 { headers: { Authorization: `Bearer ${authStore.token}` } }
             );
-
-            // Add new user to the list
-            users.value.push(response.data.data);
-
-            toast.add({
-                severity: "success",
-                summary: "Success",
-                detail: "User created",
-                life: 3000
-            });
         }
+
+        // Update the users list
+        if (editMode.value) {
+            const index = users.value.findIndex(u => u.id === user.value.id);
+            if (index !== -1) {
+                users.value[index] = response.data.data;
+            }
+        } else {
+            users.value.push(response.data.data);
+        }
+
+        toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: editMode.value ? "User updated" : "User created",
+            life: 3000
+        });
 
         userDialog.value = false;
     } catch (error) {
